@@ -1,4 +1,4 @@
-const { RETRY_COUNT, RETRY_INTERVAL, GOODS_PREVIEW } = require("./global");
+const { RETRY_COUNT, RETRY_INTERVAL, DRIVER_ADD } = require("./global");
 
 const path = require("path");
 const express = require("express");
@@ -108,7 +108,7 @@ const addDriver = (api, params, attempt = 1, res) => {
 //requestOpenData 函数是一个递归函数，它会尝试请求微信的接口，如果请求失败或遇到错误，它会通过 setTimeout 在1秒后重试，最多重试30次。每次重试都会增加 attempt 参数的计数。如果请求成功，它会尝试解析手机号并将其发送回客户端。如果解析失败，它也会重试，直到成功或达到最大尝试次数。
 app.post("/api/book", (req, res) => {
   const openId = req.headers["x-wx-source"]
-  const api = GOODS_PREVIEW;
+  const api = DRIVER_ADD;
   const { startTime } = req.body
   let params = {
     openId,
