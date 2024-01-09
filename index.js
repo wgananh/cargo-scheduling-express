@@ -1,5 +1,4 @@
 const { RETRY_COUNT, RETRY_INTERVAL, GOODS_PREVIEW } = require("./global");
-const { DriverInfo } = require("./type");
 
 const path = require("path");
 const express = require("express");
@@ -106,10 +105,9 @@ const addDriver = (api, params, attempt = 1, res) => {
 app.post("/api/book", (req, res) => {
   const openId = req.headers["x-wx-source"]
   const api = GOODS_PREVIEW;
-  const driverInfo = new DriverInfo(req.body);
   let params = {
     openId,
-    ...driverInfo
+    ...req.body
   }
 
   const currentTime = new Date().getTime();
