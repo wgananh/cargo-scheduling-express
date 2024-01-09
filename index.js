@@ -135,7 +135,10 @@ app.post("/api/book", (req, res) => {
 app.post("/api/check", (req, res) => {
   const openId = req.headers["x-wx-source"]
   const api = DRIVER_ADD;
-  let params = req.body
+  let params = {
+    openId,
+    ...req.body
+  }
   request(api, {
     method: 'POST',
     body: JSON.stringify(params),
