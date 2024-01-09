@@ -1,5 +1,5 @@
-import { RETRY_COUNT, RETRY_INTERVAL, GOODS_PREVIEW } from "./global"
-import { DriverInfo } from "./type"
+const { RETRY_COUNT, RETRY_INTERVAL, GOODS_PREVIEW } = require("./global");
+const { DriverInfo } = require("./type");
 
 const path = require("path");
 const express = require("express");
@@ -76,50 +76,50 @@ app.post('/api/phone', async (req, res) => {
   });
 });
 
-// const addDriver = (api, params, attempt = 1, res) => {
-//   if (attempt > RETRY_COUNT) {
-//     return res.send('报名失败，已达重试上限');
-//   }
-//
-//   request(api, {
-//     method: 'POST',
-//     body: JSON.stringify(params),
-//     headers: {
-//       'Content-Type': 'application/json',
-//     },
-//   }, (err, resp, body) => {
-//     if (err || resp.data.code !== 0) {
-//       setTimeout(() => addDriver(api, params, attempt + 1, res), RETRY_INTERVAL);
-//     } else {
-//       try {
-//         res.send(resp.data.msg);
-//       } catch (error) {
-//         setTimeout(() => addDriver(api, params, attempt + 1, res), RETRY_INTERVAL);
-//       }
-//     }
-//   });
-// };
-//
-// //货单预定接口
-// //首先检查当前时间是否已经达到 startTime。如果已经达到或超过，我们立即调用 requestOpenData 函数来执行请求。如果还没有到达，我们使用 setTimeout 设置一个延迟，延迟时间是 startTime 与当前时间的差值。
-// //requestOpenData 函数是一个递归函数，它会尝试请求微信的接口，如果请求失败或遇到错误，它会通过 setTimeout 在1秒后重试，最多重试30次。每次重试都会增加 attempt 参数的计数。如果请求成功，它会尝试解析手机号并将其发送回客户端。如果解析失败，它也会重试，直到成功或达到最大尝试次数。
-// app.post("/api/book", (req, res) => {
-//   const openId = req.headers["x-wx-source"]
-//   const api = GOODS_PREVIEW;
-//   let params: DriverInfo = {
-//     openId,
-//     ...req.body
-//   }
-//
-//   const currentTime = new Date().getTime();
-//   const waitTime = new Date(startTime).getTime() - currentTime;
-//
-//   if (waitTime <= 0) {
-//     addDriver(api, params, 1, res);
-//   } else {
-//     setTimeout(() => addDriver(api, params, 1, res), waitTime);
-//   }
-// });
+const addDriver = (api, params, attempt = 1, res) => {
+  if (attempt > RETRY_COUNT) {
+    return res.send('报名失败，已达重试上限');
+  }
+
+  request(api, {
+    method: 'POST',
+    body: JSON.stringify(params),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }, (err, resp, body) => {
+    if (err || resp.data.code !== 0) {
+      setTimeout(() => addDriver(api, params, attempt + 1, res), RETRY_INTERVAL);
+    } else {
+      try {
+        res.send(resp.data.msg);
+      } catch (error) {
+        setTimeout(() => addDriver(api, params, attempt + 1, res), RETRY_INTERVAL);
+      }
+    }
+  });
+};
+
+//货单预定接口
+//首先检查当前时间是否已经达到 startTime。如果已经达到或超过，我们立即调用 requestOpenData 函数来执行请求。如果还没有到达，我们使用 setTimeout 设置一个延迟，延迟时间是 startTime 与当前时间的差值。
+//requestOpenData 函数是一个递归函数，它会尝试请求微信的接口，如果请求失败或遇到错误，它会通过 setTimeout 在1秒后重试，最多重试30次。每次重试都会增加 attempt 参数的计数。如果请求成功，它会尝试解析手机号并将其发送回客户端。如果解析失败，它也会重试，直到成功或达到最大尝试次数。
+app.post("/api/book", (req, res) => {
+  const openId = req.headers["x-wx-source"]
+  const api = GOODS_PREVIEW;
+  let params: DriverInfo = {
+    openId,
+    ...req.body
+  }
+
+  const currentTime = new Date().getTime();
+  const waitTime = new Date(startTime).getTime() - currentTime;
+
+  if (waitTime <= 0) {
+    addDriver(api, params, 1, res);
+  } else {
+    setTimeout(() => addDriver(api, params, 1, res), waitTime);
+  }
+});
 
 
 const port = process.env.PORT || 80;
