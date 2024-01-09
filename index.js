@@ -122,7 +122,7 @@ app.post("/api/book", (req, res) => {
   console.log(openId + " waitTime:" + waitTime + " currentTime:" + currentTime);
   if (waitTime <= 0) {
     addDriver(api, params, 1, res);
-    res.send('正在报名处理中...');
+    res.send('正在报名中...');
   } else {
     console.log('预定请求已接收，正在处理中... ' + " waitTime:" + waitTime + " currentTime:" + currentTime)
     // 立即返回响应
