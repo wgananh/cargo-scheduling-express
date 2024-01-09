@@ -84,7 +84,7 @@ const addDriver = (api, params, attempt = 1, res) => {
 
   const timestamp = new Date().getTime(); // 获取时间戳
   const formattedDateTime = new Date(timestamp).toISOString().slice(0, 19).replace('T', ' '); // 格式化日期时间字符串
-  console.log("报名中.. " + formattedDateTime);
+  console.log(attempt + " 报名中.. " + formattedDateTime, + "时间戳: " +timestamp);
 
   request(api, {
     method: 'POST',
