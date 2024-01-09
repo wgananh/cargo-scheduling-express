@@ -105,6 +105,7 @@ const addDriver = (api, params, attempt = 1, res) => {
 app.post("/api/book", (req, res) => {
   const openId = req.headers["x-wx-source"]
   const api = GOODS_PREVIEW;
+  const { startTime } = req.body
   let params = {
     openId,
     ...req.body
