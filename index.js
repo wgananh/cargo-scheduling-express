@@ -88,6 +88,9 @@ const addDriver = (api, params, attempt = 1, res) => {
       'Content-Type': 'application/json',
     },
   }, (err, resp, body) => {
+    console.log("resp:" + JSON.stringify(resp));
+    console.log("body:" + JSON.stringify(body));
+    console.log("err:" + JSON.stringify(err));
     const resultData = JSON.parse(body);
     const { msg, code } = resultData;
     if (err || code !== 0) {
@@ -119,11 +122,13 @@ app.post("/api/book", (req, res) => {
   console.log(openId + " waitTime:" + waitTime + " currentTime:" + currentTime);
   if (waitTime <= 0) {
     addDriver(api, params, 1, res);
+    res.send('正在报名处理中...');
   } else {
+    console.log('预定请求已接收，正在处理中... ' + " waitTime:" + waitTime + " currentTime:" + currentTime)
     // 立即返回响应
-    res.send('预定请求已接收，正在处理中... ' + " waitTime:" + waitTime + " currentTime:" + currentTime);
     // 在后台等待预定时间到达后，再执行预定操作
     setTimeout(() => addDriver(api, params, 1), waitTime);
+    res.send('预定请求已接收，正在处理中...');
   }
 });
 
