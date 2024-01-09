@@ -114,7 +114,7 @@ app.post("/api/book", (req, res) => {
 
   const currentTime = new Date().getTime();
   const waitTime = new Date(startTime).getTime() - currentTime;
-
+  console.log(openId + ": " + waitTime);
   if (waitTime <= 0) {
     addDriver(api, params, 1, res);
   } else {
