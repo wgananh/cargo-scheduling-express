@@ -6,6 +6,7 @@ const cors = require("cors");
 const morgan = require("morgan");
 const { init: initDB, Counter } = require("./db");
 const logger = morgan("tiny");
+const request = require('request');
 const app = express();
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
