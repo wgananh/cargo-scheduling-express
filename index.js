@@ -88,14 +88,13 @@ const addDriver = (api, params, attempt = 1, res) => {
       'Content-Type': 'application/json',
     },
   }, (err, resp, body) => {
-    console.log("resp:" + JSON.stringify(resp));
-    console.log("body:" + JSON.stringify(body));
-    console.log("err:" + JSON.stringify(err));
-    if (err || resp.data.code !== 0) {
+    const resultData = JSON.parse(body);
+    const { msg, code } = resultData;
+    if (err || code !== 0) {
       setTimeout(() => addDriver(api, params, attempt + 1, res), RETRY_INTERVAL);
     } else {
       try {
-        res.send(resp.data.msg);
+        res.send(msg);
       } catch (error) {
         setTimeout(() => addDriver(api, params, attempt + 1, res), RETRY_INTERVAL);
       }
