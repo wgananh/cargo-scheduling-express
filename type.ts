@@ -1,4 +1,4 @@
-interface DriverInfo {
+export interface DriverInfo {
     openId: string
     publishId: string
     name: string
@@ -8,4 +8,3 @@ interface DriverInfo {
     amount: number
 }
 
-module.exports = DriverInfo;
