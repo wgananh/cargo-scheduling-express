@@ -78,7 +78,8 @@ app.post('/api/phone', async (req, res) => {
 
 const addDriver = (api, params, attempt = 1, res) => {
   if (attempt > RETRY_COUNT) {
-    return res.send('报名失败，已达重试上限');
+    res.send('报名失败，已达重试上限');
+    return;
   }
 
   const timestamp = new Date().getTime(); // 获取时间戳
@@ -112,31 +113,31 @@ const addDriver = (api, params, attempt = 1, res) => {
 //货单预定接口
 //首先检查当前时间是否已经达到 startTime。如果已经达到或超过，我们立即调用 requestOpenData 函数来执行请求。如果还没有到达，我们使用 setTimeout 设置一个延迟，延迟时间是 startTime 与当前时间的差值。
 //requestOpenData 函数是一个递归函数，它会尝试请求微信的接口，如果请求失败或遇到错误，它会通过 setTimeout 在1秒后重试，最多重试30次。每次重试都会增加 attempt 参数的计数。如果请求成功，它会尝试解析手机号并将其发送回客户端。如果解析失败，它也会重试，直到成功或达到最大尝试次数。
-app.post("/api/book", (req, res) => {
-  const openId = req.headers["x-wx-source"]
+app.post("/api/book", async (req, res) => {
+  const openId = req.headers["x-wx-source"];
   const api = DRIVER_ADD;
-  const { startTime } = req.body
+  const { startTime } = req.body;
   let params = {
     openId,
     ...req.body
-  }
+  };
 
   const currentTime = new Date().getTime();
   const waitTime = new Date(startTime).getTime() - currentTime;
   console.log(openId + " waitTime:" + waitTime + " currentTime:" + currentTime);
   if (waitTime <= 0) {
-    addDriver(api, params, 1, res);
     res.send('正在报名中...');
+    addDriver(api, params, 1, res);
   } else {
-    console.log('预定请求已接收，正在处理中... ' + " waitTime:" + waitTime + " currentTime:" + currentTime)
-    // 立即返回响应
-    // 在后台等待预定时间到达后，再执行预定操作
-    setTimeout(() => addDriver(api, params, 1), waitTime);
+    console.log('预定请求已接收，正在处理中... ' + " waitTime:" + waitTime + " currentTime:" + currentTime);
     res.send('预定请求已接收，正在处理中...');
+    // 等待预定时间到达后再执行预定操作
+    await new Promise(resolve => setTimeout(resolve, waitTime));
+    addDriver(api, params, 1, res);
   }
 });
 
-app.post("/api/check", (req, res) => {
+app.post("/api/check", async (req, res) => {
   const openId = req.headers["x-wx-source"]
   const api = DRIVER_ADD;
   let params = {
