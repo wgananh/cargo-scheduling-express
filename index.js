@@ -114,12 +114,12 @@ app.post("/api/book", (req, res) => {
 
   const currentTime = new Date().getTime();
   const waitTime = new Date(startTime).getTime() - currentTime;
-  console.log(openId + ": " + waitTime);
+  console.log(openId + " waitTime:" + waitTime + " currentTime:" + currentTime);
   if (waitTime <= 0) {
     addDriver(api, params, 1, res);
   } else {
     // 立即返回响应
-    res.send('预定请求已接收，正在处理中... ' + waitTime);
+    res.send('预定请求已接收，正在处理中... ' + " waitTime:" + waitTime + " currentTime:" + currentTime);
     // 在后台等待预定时间到达后，再执行预定操作
     setTimeout(() => addDriver(api, params, 1), waitTime);
   }
