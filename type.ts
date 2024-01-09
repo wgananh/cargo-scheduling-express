@@ -1,9 +1,11 @@
-export interface DriverInfo {
+interface DriverInfo {
     openId: string
-    publishId: string //publishId!!!!!
-    name: string //司机姓名
-    carNumber: string //车牌号
-    mobile: string //手机号
-    idNumber: string //身份证号
-    amount: number //数量
+    publishId: string
+    name: string
+    carNumber: string
+    mobile: string
+    idNumber: string
+    amount: number
 }
+
+module.exports = DriverInfo;
