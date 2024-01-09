@@ -132,6 +132,26 @@ app.post("/api/book", (req, res) => {
   }
 });
 
+app.post("/api/check", (req, res) => {
+  const openId = req.headers["x-wx-source"]
+  const api = DRIVER_ADD;
+  let params = req.body
+  request(api, {
+    method: 'POST',
+    body: JSON.stringify(params),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }, (err, resp, body) => {
+    console.log("checkIsAddDriver_resp:" + JSON.stringify(resp));
+    console.log("checkIsAddDriver_body:" + JSON.stringify(body));
+    console.log("checkIsAddDriver_err:" + JSON.stringify(err));
+    const resultData = JSON.parse(body);
+    const { msg } = resultData;
+    res.send(msg);
+  });
+});
+
 
 const port = process.env.PORT || 80;
 
