@@ -81,6 +81,10 @@ const addDriver = (api, params, attempt = 1, res) => {
     return res.send('报名失败，已达重试上限');
   }
 
+  const timestamp = new Date().getTime(); // 获取时间戳
+  const formattedDateTime = new Date(timestamp).toISOString().slice(0, 19).replace('T', ' '); // 格式化日期时间字符串
+  console.log("报名中.. " + formattedDateTime);
+
   request(api, {
     method: 'POST',
     body: JSON.stringify(params),
