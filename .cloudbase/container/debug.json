@@ -1,0 +1,45 @@
+{
+  "containers": [
+    {
+      "name": "cargo-scheduling-express",
+      "domain": "",
+      "ip": "",
+      "containerId": "f3e087bc96bbb3a2e2fdbab71f0cc71f9fbae5c7957874f06166ebe537bc1418"
+    }
+  ],
+  "config": {
+    "cargo-scheduling-express": {
+      "containerPort": 80,
+      "dockerfilePath": "Dockerfile",
+      "buildDir": "",
+      "minNum": 0,
+      "maxNum": 5,
+      "cpu": 1,
+      "mem": 2,
+      "policyType": "cpu",
+      "policyThreshold": 80,
+      "policyDetails": [
+        {
+          "PolicyType": "cpu",
+          "PolicyThreshold": 80
+        },
+        {
+          "PolicyType": "mem",
+          "PolicyThreshold": 80
+        }
+      ],
+      "envParams": {
+        "MYSQL_USERNAME": "root",
+        "MYSQL_PASSWORD": "8H9mSQ3t",
+        "MYSQL_ADDRESS": "10.10.100.68:3306"
+      },
+      "customLogs": "stdout",
+      "initialDelaySeconds": 2,
+      "dataBaseName": "nodejs_demo",
+      "executeSQLs": [
+        "CREATE DATABASE IF NOT EXISTS nodejs_demo;",
+        "USE nodejs_demo;"
+      ]
+    }
+  }
+}
