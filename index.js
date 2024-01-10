@@ -84,7 +84,7 @@ const addDriver = (api, params, attempt = 1, res) => {
 
   const timestamp = new Date().getTime(); // 获取时间戳
   const timeString = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
-  console.log(attempt + " 报名中.. " + timeString, + "时间戳: " +timestamp);
+  console.log(attempt + " 报名中.. " + timeString + "时间戳: " + timestamp);
 
   request(api, {
     method: 'POST',
