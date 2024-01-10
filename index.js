@@ -1,4 +1,4 @@
-const { RETRY_COUNT, RETRY_INTERVAL, DRIVER_ADD } = require("./global");
+const { RETRY_COUNT, RETRY_INTERVAL, DRIVER_ADD, delay } = require("./global");
 
 const path = require("path");
 const express = require("express");
@@ -18,30 +18,30 @@ app.get("/", async (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// 更新计数
-app.post("/api/count", async (req, res) => {
-  const { action } = req.body;
-  if (action === "inc") {
-    await Counter.create();
-  } else if (action === "clear") {
-    await Counter.destroy({
-      truncate: true,
-    });
-  }
-  res.send({
-    code: 0,
-    data: await Counter.count(),
-  });
-});
-
-// 获取计数
-app.get("/api/count", async (req, res) => {
-  const result = await Counter.count();
-  res.send({
-    code: 0,
-    data: result,
-  });
-});
+// // 更新计数
+// app.post("/api/count", async (req, res) => {
+//   const { action } = req.body;
+//   if (action === "inc") {
+//     await Counter.create();
+//   } else if (action === "clear") {
+//     await Counter.destroy({
+//       truncate: true,
+//     });
+//   }
+//   res.send({
+//     code: 0,
+//     data: await Counter.count(),
+//   });
+// });
+//
+// // 获取计数
+// app.get("/api/count", async (req, res) => {
+//   const result = await Counter.count();
+//   res.send({
+//     code: 0,
+//     data: result,
+//   });
+// });
 
 // 小程序调用，获取微信 Open ID
 app.get("/api/wx_openid", async (req, res) => {
@@ -76,7 +76,7 @@ app.post('/api/phone', async (req, res) => {
   });
 });
 
-const addDriver = (api, params, attempt = 1, res) => {
+const addDriver = async (api, params, attempt = 1, res) => {
   if (attempt > RETRY_COUNT) {
     return;
   }
@@ -91,14 +91,15 @@ const addDriver = (api, params, attempt = 1, res) => {
     headers: {
       'Content-Type': 'application/json',
     },
-  }, (err, resp, body) => {
+  }, async (err, resp, body) => {
     console.log("resp:" + JSON.stringify(resp));
     console.log("body:" + JSON.stringify(body));
     console.log("err:" + JSON.stringify(err));
     const resultData = JSON.parse(body);
     const { msg, code } = resultData;
     if (err || code !== 0) {
-      setTimeout(() => addDriver(api, params, attempt + 1, res), RETRY_INTERVAL);
+      await delay(RETRY_INTERVAL);
+      addDriver(api, params, attempt + 1, res);
     } else {
       //成功
     }
@@ -127,7 +128,7 @@ app.post("/api/book", async (req, res) => {
     console.log('预定请求已接收，正在处理中... ' + " waitTime:" + waitTime + " currentTime:" + currentTime);
     res.send('预定请求已接收，正在处理中...');
     // 等待预定时间到达后再执行预定操作
-    await new Promise(resolve => setTimeout(resolve, waitTime));
+    await delay(waitTime);
     addDriver(api, params, 1, res);
   }
 });

@@ -4,9 +4,15 @@ const RETRY_INTERVAL = 10 //每次报名重试的时间间隔，单位毫秒
 const HOST = "https://tmwz.sinogiantgroup.com/" //主域名
 const DRIVER_ADD = HOST + "wechat/driver/add" //报名接口
 
+function delay(waitTime) {
+    return new Promise(resolve => setTimeout(resolve, waitTime));
+}
+
+
 module.exports = {
     RETRY_COUNT,
     RETRY_INTERVAL,
     HOST,
-    DRIVER_ADD
+    DRIVER_ADD,
+    delay
 }
