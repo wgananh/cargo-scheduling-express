@@ -78,7 +78,6 @@ app.post('/api/phone', async (req, res) => {
 
 const addDriver = (api, params, attempt = 1, res) => {
   if (attempt > RETRY_COUNT) {
-    res.send('报名失败，已达重试上限');
     return;
   }
 
@@ -101,11 +100,7 @@ const addDriver = (api, params, attempt = 1, res) => {
     if (err || code !== 0) {
       setTimeout(() => addDriver(api, params, attempt + 1, res), RETRY_INTERVAL);
     } else {
-      try {
-        res.send(msg);
-      } catch (error) {
-        setTimeout(() => addDriver(api, params, attempt + 1, res), RETRY_INTERVAL);
-      }
+      //成功
     }
   });
 };
