@@ -83,8 +83,8 @@ const addDriver = (api, params, attempt = 1, res) => {
   }
 
   const timestamp = new Date().getTime(); // 获取时间戳
-  const formattedDateTime = new Date(timestamp).toISOString().slice(0, 19).replace('T', ' '); // 格式化日期时间字符串
-  console.log(attempt + " 报名中.. " + formattedDateTime, + "时间戳: " +timestamp);
+  const timeString = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+  console.log(attempt + " 报名中.. " + timeString, + "时间戳: " +timestamp);
 
   request(api, {
     method: 'POST',
