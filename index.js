@@ -1,4 +1,4 @@
-const { RETRY_COUNT, RETRY_INTERVAL, DRIVER_ADD, delay } = require("./global");
+const { RETRY_COUNT, RETRY_INTERVAL, FIRST_REQUEST_INTERVAL, DRIVER_ADD, delay } = require("./global");
 
 const path = require("path");
 const express = require("express");
@@ -83,7 +83,7 @@ const addDriver = async (api, params, attempt = 1, res) => {
 
   const timestamp = new Date().getTime(); // 获取时间戳
   const timeString = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
-  console.log(attempt + " 报名中.. " + timeString + "时间戳: " + timestamp);
+  console.log(attempt + " 报名中.. " + timeString + " 时间戳: " + timestamp);
 
   request(api, {
     method: 'POST',
@@ -92,9 +92,9 @@ const addDriver = async (api, params, attempt = 1, res) => {
       'Content-Type': 'application/json',
     },
   }, async (err, resp, body) => {
-    console.log("resp:" + JSON.stringify(resp));
-    console.log("body:" + JSON.stringify(body));
-    console.log("err:" + JSON.stringify(err));
+    console.log("attempt:" + attempt + " resp:" + JSON.stringify(resp));
+    console.log("attempt:" + attempt + " body:" + JSON.stringify(body));
+    console.log("attempt:" + attempt + " err:" + JSON.stringify(err));
     const resultData = JSON.parse(body);
     const { msg, code } = resultData;
     if (err || code !== 0) {
@@ -125,10 +125,10 @@ app.post("/api/book", async (req, res) => {
     res.send('正在报名中...');
     addDriver(api, params, 1, res);
   } else {
-    console.log('预定请求已接收，正在处理中... ' + " waitTime:" + waitTime + " currentTime:" + currentTime);
+    console.log("openId:" + openId + ' 预定请求已接收，正在处理中... ' + " waitTime:" + waitTime + " currentTime:" + currentTime);
     res.send('预定请求已接收，正在处理中...');
     // 等待预定时间到达后再执行预定操作
-    await delay(waitTime);
+    await delay(waitTime + FIRST_REQUEST_INTERVAL);
     addDriver(api, params, 1, res);
   }
 });
