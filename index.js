@@ -199,15 +199,15 @@ app.ws('/checkStatus', async function (ws, req) {
     //   ws.send(`收到-${msg}`)
     // })
     //
-    // ws.on('close', async function () {
-    //   console.log('链接断开：', openid)
-    //   // 更新数据库中的WebSocket连接状态记录
-    //   await WebSocketConnection.update({
-    //     isConnected: false
-    //   }, {
-    //     where: { openid: openid }
-    //   });
-    // })
+    ws.on('close', async function () {
+      console.log('链接断开：', openid)
+      // 更新数据库中的WebSocket连接状态记录
+      await WebSocketConnection.update({
+        isConnected: false
+      }, {
+        where: { openid: openid }
+      });
+    })
   }
 })
 
