@@ -1,4 +1,6 @@
 const { RETRY_COUNT, RETRY_INTERVAL, FIRST_REQUEST_INTERVAL, DRIVER_ADD, delay } = require("./global");
+// 假设connect是一个保存所有WebSocket连接的对象
+const connectWebSocket = {};
 
 const path = require("path");
 const express = require("express");
@@ -14,6 +16,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cors());
 app.use(logger);
+
 
 // 首页
 app.get("/", async (req, res) => {
@@ -86,6 +89,9 @@ const addDriver = async (api, params, attempt = 1, res) => {
   const timestamp = new Date().getTime(); // 获取时间戳
   const timeString = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
   console.log(attempt + " 报名中.. " + timeString + " 时间戳: " + timestamp);
+  const openid = params.openId; // 假设params中包含了openid
+  const userWs = connectWebSocket[openid];
+  userWs.send(JSON.stringify({ message: attempt + " 报名中.. " + timeString + " 时间戳: " + timestamp, data: {} }));
 
   request(api, {
     method: 'POST',
@@ -185,22 +191,23 @@ app.ws('/checkStatus', async function (ws, req) {
         ip: req.headers['x-forwarded-for'] || '未知',
       });
 
-    console.log('链接请求头信息', req.headers)
+      console.log('链接请求头信息', req.headers)
+      connectWebSocket[openid] = ws;
 
-    ws.on('message', function (msg) {
-      console.log('收到消息：', msg)
-      ws.send(`收到-${msg}`)
-    })
-
-    ws.on('close', async function () {
-      console.log('链接断开：', openid)
-      // 更新数据库中的WebSocket连接状态记录
-      await WebSocketConnection.update({
-        isConnected: false
-      }, {
-        where: { openid: openid }
-      });
-    })
+      // ws.on('message', function (msg) {
+    //   console.log('收到消息：', msg)
+    //   ws.send(`收到-${msg}`)
+    // })
+    //
+    // ws.on('close', async function () {
+    //   console.log('链接断开：', openid)
+    //   // 更新数据库中的WebSocket连接状态记录
+    //   await WebSocketConnection.update({
+    //     isConnected: false
+    //   }, {
+    //     where: { openid: openid }
+    //   });
+    // })
   }
 })
 
