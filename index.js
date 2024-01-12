@@ -4,7 +4,7 @@ const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
-const { init: initDB, Counter } = require("./db");
+const { init: initDB, Counter, WebSocketConnection } = require("./db");
 const logger = morgan("tiny");
 const request = require('request');
 const app = express();
@@ -157,29 +157,47 @@ app.post("/api/check", async (req, res) => {
 });
 
 
-app.checkStatus('/checkStatus', function (ws, req) {
+app.checkStatus('/checkStatus', async function (ws, req) {
   let openid = req.headers['x-wx-openid'] // 从header中获取用户openid信息
   if (openid == null) { // 如果不存在则不是微信侧发起的
     openid = new Date().getTime() // 使用时间戳代替
   }
-  if (connect[openid] != null) { // 判断用户是否有连接
-    ws.send('当前用户已经在其他设备连接过，无法重复连接') // 发送重复连接信息
-    ws.close() // 关闭连接
-  } else {
-    connect[openid] = { // 记录用户信息
-      openid: openid, // 用户openid
-      source: req.headers['x-wx-source'] || '非微信', // 用户微信来源
-      unionid: req.headers['x-wx-unionid'] || '-', // 用户unionid
-      ip: req.headers['x-forwarded-for'] || '未知' // 用户所在ip地址
-    }
+
+    // 先查询数据库中该openid的连接状态
+    const existingConnection = await WebSocketConnection.findOne({
+      where: { openid: openid }
+    });
+
+    if (existingConnection && existingConnection.isConnected) {
+      // 如果已经存在活动连接，发送重复连接信息并关闭WebSocket
+      ws.send('当前用户已经在其他设备连接过，无法重复连接');
+      ws.close();
+    } else {
+      // 如果没有活动连接，创建或更新数据库记录
+      await WebSocketConnection.upsert({
+        openid: openid,
+        isConnected: true,
+        lastConnectedAt: new Date(),
+        source: req.headers['x-wx-source'] || '非微信',
+        unionid: req.headers['x-wx-unionid'] || '-',
+        ip: req.headers['x-forwarded-for'] || '未知',
+      });
+
     console.log('链接请求头信息', req.headers)
+
     ws.on('message', function (msg) {
       console.log('收到消息：', msg)
       ws.send(`收到-${msg}`)
     })
-    ws.on('close', function () {
+
+    ws.on('close', async function () {
       console.log('链接断开：', openid)
-      delete connect[openid]
+      // 更新数据库中的WebSocket连接状态记录
+      await WebSocketConnection.update({
+        isConnected: false
+      }, {
+        where: { openid: openid }
+      });
     })
   }
 })
