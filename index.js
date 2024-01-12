@@ -8,6 +8,8 @@ const { init: initDB, Counter, WebSocketConnection } = require("./db");
 const logger = morgan("tiny");
 const request = require('request');
 const app = express();
+require('express-ws')(app)
+
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cors());
@@ -157,7 +159,7 @@ app.post("/api/check", async (req, res) => {
 });
 
 
-app.checkStatus('/checkStatus', async function (ws, req) {
+app.ws('/checkStatus', async function (ws, req) {
   let openid = req.headers['x-wx-openid'] // 从header中获取用户openid信息
   if (openid == null) { // 如果不存在则不是微信侧发起的
     openid = new Date().getTime() // 使用时间戳代替
