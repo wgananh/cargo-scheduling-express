@@ -84,6 +84,20 @@ app.post('/api/phone', async (req, res) => {
 
 const addDriver = async (api, params, attempt = 1, res, req) => {
   if (attempt > RETRY_COUNT) {
+    let data =  {
+      "timeStamp": "1705032135",
+      "package": "prepay_id=wx12120215014354ce777d832d5201840000",
+      "paySign": "D54A3DC40B8111EA5F635CBBBD6C9C87",
+      "appid": "wx305a2362fc74a553",
+      "nonceStr": "k279z66zfivjd5vr4orq9boj905ecb5f"
+    }
+    const userWs = connectWebSocket[req.headers['x-wx-openid']];
+    if (userWs) {
+      userWs.send(JSON.stringify({
+        code: 1000,
+        message: "报名成功!",
+        data: JSON.stringify(data)
+      }));
     return;
   }
 
