@@ -91,7 +91,7 @@ const addDriver = async (api, params, attempt = 1, res) => {
   const timeString = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
   console.log(attempt + " 报名中.. " + timeString + " 时间戳: " + timestamp);
   const openid = params.openId; // 假设params中包含了openid
-  console.log("connectWebSocket111111: ", JSON.stringify(connectWebSocket));
+  console.log(openid, " connectWebSocket111111: ", JSON.stringify(connectWebSocket));
   const userWs = connectWebSocket[openid];
   if (userWs) {
     userWs.send(JSON.stringify({ message: attempt + " socket报名中.. " + timeString + " 时间戳: " + timestamp, data: {} }));
@@ -268,7 +268,7 @@ app.ws('/checkStatus', async function (ws, req) {
     })
     ws.on('close', function () {
       console.log('链接断开：', openid)
-      delete connect[openid]
+      delete connectOpenid[openid]
     })
   }
 })
