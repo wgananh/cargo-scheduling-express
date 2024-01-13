@@ -98,6 +98,7 @@ const addDriver = async (api, params, attempt = 1, res, req) => {
         message: "报名成功!",
         data: JSON.stringify(data)
       }));
+    }
     return;
   }
 
