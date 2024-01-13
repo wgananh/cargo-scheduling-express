@@ -205,16 +205,16 @@ app.ws('/checkStatus', async function (ws, req) {
     openid = new Date().getTime() // 使用时间戳代替
   }
 
-    // 先查询数据库中该openid的连接状态
-    const existingConnection = await WebSocketConnection.findOne({
-      where: { openid: openid }
-    });
+    // // 先查询数据库中该openid的连接状态
+    // const existingConnection = await WebSocketConnection.findOne({
+    //   where: { openid: openid }
+    // });
 
-    if (existingConnection && existingConnection.isConnected) {
-      // 如果已经存在活动连接，发送重复连接信息并关闭WebSocket
-      ws.send('当前用户已经在其他设备连接过，无法重复连接');
-      ws.close();
-    } else {
+    // if (existingConnection && existingConnection.isConnected) {
+    //   // 如果已经存在活动连接，发送重复连接信息并关闭WebSocket
+    //   ws.send('当前用户已经在其他设备连接过，无法重复连接');
+    //   ws.close();
+    // } else {
       // 如果没有活动连接，创建或更新数据库记录
       await WebSocketConnection.upsert({
         openid: openid,
@@ -242,7 +242,7 @@ app.ws('/checkStatus', async function (ws, req) {
         where: { openid: openid }
       });
     })
-  }
+  // }
 })
 
 // app.ws('/checkStatus', async function (ws, req) {
