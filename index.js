@@ -261,7 +261,16 @@ app.ws('/checkStatus', async function (ws, req) {
       ip: req.headers['x-forwarded-for'] || '未知' // 用户所在ip地址
     }
     connectWebSocket[openid] = ws;
-    console.log(openid, " connectWebSocket00000: ", JSON.stringify(connectWebSocket));
+    const visitedObjects = new WeakSet();
+    console.log(openid, " connectWebSocket00000: ", JSON.stringify(connectWebSocket, (key, value) => {
+      if (typeof value === 'object' && value !== null) {
+        if (visitedObjects.has(value)) {
+          return; // Avoid circular reference
+        }
+        visitedObjects.add(value);
+      }
+      return value;
+    }));
     console.log('链接请求头信息', req.headers)
     ws.on('message', function (msg) {
       console.log('收到消息：', msg)
