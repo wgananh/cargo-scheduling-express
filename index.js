@@ -82,7 +82,7 @@ app.post('/api/phone', async (req, res) => {
   });
 });
 
-const addDriver = async (api, params, attempt = 1, res) => {
+const addDriver = async (api, params, attempt = 1, res, req) => {
   if (attempt > RETRY_COUNT) {
     return;
   }
@@ -90,9 +90,10 @@ const addDriver = async (api, params, attempt = 1, res) => {
   const timestamp = new Date().getTime(); // 获取时间戳
   const timeString = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
   console.log(attempt + " 报名中.. " + timeString + " 时间戳: " + timestamp);
-  const openid = params.openId; // 假设params中包含了openid
-  console.log(openid, " connectWebSocket111111: ", JSON.stringify(connectWebSocket));
-  const userWs = connectWebSocket[openid];
+  const openId = req.headers["x-wx-source"];
+  console.log(openId, " connectWebSocket111111: ", JSON.stringify(connectWebSocket));
+  console.log(" connectOpenid: ", JSON.stringify(connectOpenid));
+  const userWs = connectWebSocket[openId];
   if (userWs) {
     userWs.send(JSON.stringify({ message: attempt + " socket报名中.. " + timeString + " 时间戳: " + timestamp, data: {} }));
   } else {
@@ -113,11 +114,11 @@ const addDriver = async (api, params, attempt = 1, res) => {
     const { msg, code, data } = resultData;
     if (err || code !== 0) {
       await delay(RETRY_INTERVAL);
-      addDriver(api, params, attempt + 1, res);
+      await addDriver(api, params, attempt + 1, res, req);
     } else {
       const orderNo = data;
       if (orderNo && orderNo.length > 0) {
-        wxPay(orderNo)
+        await wxPay(orderNo)
       }
     }
   });
@@ -164,13 +165,13 @@ app.post("/api/book", async (req, res) => {
   console.log(openId + " waitTime:" + waitTime + " currentTime:" + currentTime);
   if (waitTime <= 0) {
     res.send('正在报名中...');
-    addDriver(api, params, 1, res);
+    await addDriver(api, params, 1, res, req);
   } else {
     console.log("openId:" + openId + ' 预定请求已接收，正在处理中... ' + " waitTime:" + waitTime + " currentTime:" + currentTime);
     res.send('预定请求已接收，正在处理中...');
     // 等待预定时间到达后再执行预定操作
     await delay(waitTime + FIRST_REQUEST_INTERVAL);
-    addDriver(api, params, 1, res);
+    await addDriver(api, params, 1, res, req);
   }
 });
 
@@ -260,7 +261,7 @@ app.ws('/checkStatus', async function (ws, req) {
       ip: req.headers['x-forwarded-for'] || '未知' // 用户所在ip地址
     }
     connectWebSocket[openid] = ws;
-    console.log("connectWebSocket00000: ", JSON.stringify(connectWebSocket));
+    console.log(openid, " connectWebSocket00000: ", JSON.stringify(connectWebSocket));
     console.log('链接请求头信息', req.headers)
     ws.on('message', function (msg) {
       console.log('收到消息：', msg)
