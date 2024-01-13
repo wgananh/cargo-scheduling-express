@@ -4,6 +4,7 @@ const RETRY_INTERVAL = 10 //每次报名重试的时间间隔，单位毫秒
 
 const HOST = "https://tmwz.sinogiantgroup.com/" //主域名
 const DRIVER_ADD = HOST + "wechat/driver/add" //报名接口
+const WX_PAY = HOST + "wechat/weixin/wxPay" //报名接口
 
 function delay(waitTime) {
     return new Promise(resolve => setTimeout(resolve, waitTime));
