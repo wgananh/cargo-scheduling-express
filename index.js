@@ -90,7 +90,8 @@ const addDriver = async (api, params, attempt = 1, res, req) => {
   const timestamp = new Date().getTime(); // 获取时间戳
   const timeString = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
   console.log(attempt + " 报名中.. " + timeString + " 时间戳: " + timestamp);
-  const openId = req.headers["x-wx-source"];
+  // const openId = req.headers["x-wx-source"];
+  const openId = "o2TLF60hC4_FsRIpU5W9BB9T2OvQ";
   console.log(openId, " connectWebSocket111111: ", JSON.stringify(connectWebSocket));
   console.log(" connectOpenid: ", JSON.stringify(connectOpenid));
   const userWs = connectWebSocket[openId];
