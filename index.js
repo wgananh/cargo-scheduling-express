@@ -91,14 +91,6 @@ const addDriver = async (api, params, attempt = 1, res, req) => {
   const timeString = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
   console.log(attempt + " 报名中.. " + timeString + " 时间戳: " + timestamp);
   const openId = req.headers['x-wx-openid'];
-  console.log(openId, " connectWebSocket111111: ", JSON.stringify(connectWebSocket));
-  console.log(" connectOpenid: ", JSON.stringify(connectOpenid));
-  const userWs = connectWebSocket[openId];
-  if (userWs) {
-    userWs.send(JSON.stringify({ message: attempt + " socket报名中.. " + timeString + " 时间戳: " + timestamp, data: {} }));
-  } else {
-    console.error("WebSocket连接不存在，无法发送消息");
-  }
 
   request(api, {
     method: 'POST',
@@ -118,14 +110,14 @@ const addDriver = async (api, params, attempt = 1, res, req) => {
     } else {
       const orderNo = data;
       if (orderNo && orderNo.length > 0) {
-        await wxPay(orderNo)
+        await wxPay(orderNo, openId);
       }
     }
   });
 };
 
 
-const wxPay = async (orderNo) => {
+const wxPay = async (orderNo, openId) => {
   let params = {
     orderNo
   };
@@ -142,8 +134,16 @@ const wxPay = async (orderNo) => {
     const resultData = JSON.parse(body);
     const { msg, success, data } = resultData;
     if (success) {
-      const payData = data;
-      //payData发送给客户端
+      const userWs = connectWebSocket[openId];
+      if (userWs) {
+        userWs.send(JSON.stringify({
+          code: 1000,
+          message: "报名成功!",
+          data: JSON.stringify(data)
+        }));
+      } else {
+        console.error("WebSocket连接不存在，无法发送消息");
+      }
     }
   });
 }
