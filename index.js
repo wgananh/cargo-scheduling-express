@@ -91,7 +91,11 @@ const addDriver = async (api, params, attempt = 1, res) => {
   console.log(attempt + " 报名中.. " + timeString + " 时间戳: " + timestamp);
   const openid = params.openId; // 假设params中包含了openid
   const userWs = connectWebSocket[openid];
-  userWs.send(JSON.stringify({ message: attempt + " 报名中.. " + timeString + " 时间戳: " + timestamp, data: {} }));
+  if (userWs) {
+    userWs.send(JSON.stringify({ message: attempt + " 报名中.. " + timeString + " 时间戳: " + timestamp, data: {} }));
+  } else {
+    console.error("WebSocket连接不存在，无法发送消息");
+  }
 
   request(api, {
     method: 'POST',
@@ -199,8 +203,8 @@ app.ws('/checkStatus', async function (ws, req) {
     //   ws.send(`收到-${msg}`)
     // })
     //
-    ws.on('close', async function () {
-      console.log('链接断开：', openid)
+    ws.on('close', async function (code, reason) {
+      console.log('链接断开:', openid, ' code:', code, ' reason:', reason);
       // 更新数据库中的WebSocket连接状态记录
       await WebSocketConnection.update({
         isConnected: false
