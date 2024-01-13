@@ -91,6 +91,7 @@ const addDriver = async (api, params, attempt = 1, res) => {
   const timeString = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
   console.log(attempt + " 报名中.. " + timeString + " 时间戳: " + timestamp);
   const openid = params.openId; // 假设params中包含了openid
+  console.log("connectWebSocket111111: ", JSON.stringify(connectWebSocket));
   const userWs = connectWebSocket[openid];
   if (userWs) {
     userWs.send(JSON.stringify({ message: attempt + " socket报名中.. " + timeString + " 时间戳: " + timestamp, data: {} }));
@@ -259,6 +260,7 @@ app.ws('/checkStatus', async function (ws, req) {
       ip: req.headers['x-forwarded-for'] || '未知' // 用户所在ip地址
     }
     connectWebSocket[openid] = ws;
+    console.log("connectWebSocket00000: ", JSON.stringify(connectWebSocket));
     console.log('链接请求头信息', req.headers)
     ws.on('message', function (msg) {
       console.log('收到消息：', msg)
