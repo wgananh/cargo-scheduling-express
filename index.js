@@ -1,6 +1,6 @@
-const { RETRY_COUNT, RETRY_INTERVAL, FIRST_REQUEST_INTERVAL, DRIVER_ADD, WX_PAY, delay } = require("./global");
+const { RETRY_COUNT, RETRY_INTERVAL, FIRST_REQUEST_INTERVAL, DRIVER_ADD, WX_PAY, delay, GET_PAY_PARAMS } = require("./global");
 // 假设connect是一个保存所有WebSocket连接的对象
-const connectWebSocket = {};
+const connectWebSocket = new Map();
 const connectOpenid = {};
 
 const path = require("path");
@@ -84,19 +84,12 @@ app.post('/api/phone', async (req, res) => {
 
 const addDriver = async (api, params, attempt = 1, res, req) => {
   if (attempt > RETRY_COUNT) {
-    let data =  {
-      "timeStamp": "1705032135",
-      "package": "prepay_id=wx12120215014354ce777d832d5201840000",
-      "paySign": "D54A3DC40B8111EA5F635CBBBD6C9C87",
-      "appid": "wx305a2362fc74a553",
-      "nonceStr": "k279z66zfivjd5vr4orq9boj905ecb5f"
-    }
-    const userWs = connectWebSocket[req.headers['x-wx-openid']];
+    // 超过重试次数，返回错误信息
+    const userWs = connectWebSocket.get(req.headers['x-wx-openid']);
     if (userWs) {
       userWs.send(JSON.stringify({
-        code: 1000,
-        message: "报名成功!",
-        data: JSON.stringify(data)
+        code: 1001,
+        message: "报名失败，请重试!",
       }));
     }
     return;
@@ -123,10 +116,64 @@ const addDriver = async (api, params, attempt = 1, res, req) => {
       await delay(RETRY_INTERVAL);
       await addDriver(api, params, attempt + 1, res, req);
     } else {
-      const orderNo = data;
-      if (orderNo && orderNo.length > 0) {
-        await wxPay(orderNo, openId);
-      }
+      // 报名成功，获取支付参数
+      const publishId = params.publishId; // 从请求参数中获取
+      const openId = req.headers['x-wx-openid'];
+      const amount = params.amount || 50; // 从请求参数中获取金额，默认50
+
+      // 调用获取支付参数接口
+      request(GET_PAY_PARAMS, {
+        method: 'POST',
+        body: JSON.stringify({
+          publishId,
+          openId,
+          amount
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }, async (payErr, payResp, payBody) => {
+        const userWs = connectWebSocket.get(openId);
+        if (payErr) {
+          if (userWs) {
+            userWs.send(JSON.stringify({
+              code: 1002,
+              message: "获取支付参数失败",
+              error: payErr
+            }));
+          }
+          return;
+        }
+
+        try {
+          const payData = JSON.parse(payBody);
+          if (payData.code === "0") {
+            // 发送支付参数给前端
+            if (userWs) {
+              userWs.send(JSON.stringify({
+                code: 1000,
+                message: "报名成功，请完成支付",
+                data: payData.data
+              }));
+            }
+          } else {
+            if (userWs) {
+              userWs.send(JSON.stringify({
+                code: 1003,
+                message: payData.msg || "获取支付参数失败",
+              }));
+            }
+          }
+        } catch (error) {
+          if (userWs) {
+            userWs.send(JSON.stringify({
+              code: 1004,
+              message: "解析支付参数失败",
+              error
+            }));
+          }
+        }
+      });
     }
   });
 };
@@ -149,7 +196,7 @@ const wxPay = async (orderNo, openId) => {
     const resultData = JSON.parse(body);
     const { msg, success, data } = resultData;
     if (success) {
-      const userWs = connectWebSocket[openId];
+      const userWs = connectWebSocket.get(openId);
       if (userWs) {
         userWs.send(JSON.stringify({
           code: 1000,
@@ -215,22 +262,23 @@ app.post("/api/check", async (req, res) => {
 
 
 app.ws('/checkStatus', async function (ws, req) {
-  let openid = req.headers['x-wx-openid'] // 从header中获取用户openid信息
-  if (openid == null) { // 如果不存在则不是微信侧发起的
-    openid = new Date().getTime() // 使用时间戳代替
+  let openid = req.headers['x-wx-openid']
+  if (openid == null) {
+    openid = new Date().getTime() // 使用时间戳作为临时ID不太安全
   }
 
-    // // 先查询数据库中该openid的连接状态
-    // const existingConnection = await WebSocketConnection.findOne({
-    //   where: { openid: openid }
-    // });
+  // 当前代码注释掉了重复连接检查，建议恢复并优化：
+  const existingWs = connectWebSocket[openid];
+  if (existingWs && existingWs.readyState === 1) { // 1 表示连接打开状态
+    ws.send(JSON.stringify({
+      code: 1006,
+      message: "当前用户已在其他设备连接"
+    }));
+    ws.close();
+    return;
+  }
 
-    // if (existingConnection && existingConnection.isConnected) {
-    //   // 如果已经存在活动连接，发送重复连接信息并关闭WebSocket
-    //   ws.send('当前用户已经在其他设备连接过，无法重复连接');
-    //   ws.close();
-    // } else {
-      // 如果没有活动连接，创建或更新数据库记录
+  // 连接记录到数据库
       await WebSocketConnection.upsert({
         openid: openid,
         isConnected: true,
@@ -240,64 +288,80 @@ app.ws('/checkStatus', async function (ws, req) {
         ip: req.headers['x-forwarded-for'] || '未知',
       });
 
-      console.log('链接请求头信息', req.headers)
-      connectWebSocket[openid] = ws;
+  connectWebSocket[openid] = ws;
+
+  // 心跳检测机制缺失，建议添加
+  const heartbeatInterval = setInterval(() => {
+    if (ws.readyState === 1) {
+      ws.send(JSON.stringify({ type: 'heartbeat' }));
+    }
+  }, 30000); // 每30秒发送一次心跳
 
       ws.on('message', function (msg) {
-      console.log('收到消息：', msg)
-      ws.send(`收到-${msg}`)
-    })
+    try {
+      const data = JSON.parse(msg);
+      if (data.type === 'heartbeat') {
+        ws.send(JSON.stringify({ type: 'heartbeat_response' }));
+        return;
+      }
+      // 处理其他消息...
+      console.log('收到消息：', msg);
+      ws.send(`收到-${msg}`);
+    } catch (error) {
+      console.error('消息处理错误:', error);
+    }
+  });
 
     ws.on('close', async function (code, reason) {
+    clearInterval(heartbeatInterval); // 清理心跳定时器
       console.log('链接断开:', openid, ' code:', code, ' reason:', reason);
-      // 更新数据库中的WebSocket连接状态记录
+    
+    delete connectWebSocket[openid]; // 清理连接记录
+
+    // 更新数据库连接状态
       await WebSocketConnection.update({
-        isConnected: false
+      isConnected: false,
+      lastConnectedAt: new Date() // 记录断开时间
       }, {
         where: { openid: openid }
       });
-    })
-  // }
-})
+  });
 
-// app.ws('/checkStatus', async function (ws, req) {
-//   let openid = req.headers['x-wx-openid'] // 从header中获取用户openid信息
-//   if (openid == null) { // 如果不存在则不是微信侧发起的
-//     openid = new Date().getTime() // 使用时间戳代替
-//   }
-//   if (connectOpenid[openid] != null) { // 判断用户是否有连接
-//     ws.send('当前用户已经在其他设备连接过，无法重复连接') // 发送重复连接信息
-//     ws.close() // 关闭连接
-//   } else {
-//     connectOpenid[openid] = { // 记录用户信息
-//       openid: openid, // 用户openid
-//       source: req.headers['x-wx-source'] || '非微信', // 用户微信来源
-//       unionid: req.headers['x-wx-unionid'] || '-', // 用户unionid
-//       ip: req.headers['x-forwarded-for'] || '未知' // 用户所在ip地址
-//     }
-//     connectWebSocket[openid] = ws;
-//     const visitedObjects = new WeakSet();
-//     console.log(openid, " connectWebSocket00000: ", JSON.stringify(connectWebSocket, (key, value) => {
-//       if (typeof value === 'object' && value !== null) {
-//         if (visitedObjects.has(value)) {
-//           return; // Avoid circular reference
-//         }
-//         visitedObjects.add(value);
-//       }
-//       return value;
-//     }));
-//     console.log('链接请求头信息', req.headers)
-//     ws.on('message', function (msg) {
-//       console.log('收到消息：', msg)
-//       ws.send(`收到-${msg}`)
-//     })
-//     ws.on('close', function () {
-//       console.log('链接断开：', openid)
-//       delete connectOpenid[openid]
-//     })
-//   }
-// })
+  ws.on('error', function(error) {
+    console.error('WebSocket错误:', openid, error);
+    clearInterval(heartbeatInterval);
+    delete connectWebSocket[openid];
+  });
+});
 
+// 支付结果通知接口
+app.post("/api/pay/notify", async (req, res) => {
+  const { orderNo, status } = req.body;
+  const openId = req.headers['x-wx-openid'];
+  
+  // 处理支付结果
+  const userWs = connectWebSocket.get(openId);
+  if (userWs) {
+    if (status === 'success') {
+      userWs.send(JSON.stringify({
+        code: 1000,
+        message: "支付成功!",
+        data: { orderNo }
+      }));
+    } else {
+      userWs.send(JSON.stringify({
+        code: 1005,
+        message: "支付失败",
+        data: { orderNo }
+      }));
+    }
+  }
+  
+  res.send({
+    code: 0,
+    message: "通知处理成功"
+  });
+});
 
 const port = process.env.PORT || 80;
 
@@ -309,3 +373,25 @@ async function bootstrap() {
 }
 
 bootstrap();
+
+// 建议添加一个统一的消息发送方法
+const sendWebSocketMessage = (openid, message) => {
+  const ws = connectWebSocket[openid];
+  if (ws && ws.readyState === 1) {
+    try {
+      ws.send(JSON.stringify(message));
+      return true;
+    } catch (error) {
+      console.error('发送消息失败:', error);
+      return false;
+    }
+  }
+  return false;
+};
+
+// 使用示例
+sendWebSocketMessage(openid, {
+  code: 1000,
+  message: "报名成功，请完成支付",
+  data: payData.data
+});
